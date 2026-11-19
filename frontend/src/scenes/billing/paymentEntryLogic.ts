@@ -379,6 +379,8 @@ export const paymentEntryLogic = kea<paymentEntryLogicType>([
                     return
                 }
                 cache.completedPaymentFlow = flow
+                posthog.capture('subscription_upgrade_completed')
+                posthog.logger.info('subscription_upgrade_completed')
                 const { organizationId } = flow
                 await runPaymentStep(
                     async (): Promise<[BillingType | null, OrganizationType | null]> => {
@@ -445,6 +447,14 @@ export const paymentEntryLogic = kea<paymentEntryLogicType>([
                 if (!organizationId) {
                     return
                 }
+                posthog.capture('subscription_upgrade_started', {
+                    flow: 'product',
+                    has_intent_product: !!product?.type,
+                })
+                posthog.logger.info('subscription_upgrade_requested', {
+                    flow: 'product',
+                    has_intent_product: !!product?.type,
+                })
                 if (!billing?.customer_id) {
                     actions.showPaymentEntryModal()
                     return
@@ -472,6 +482,14 @@ export const paymentEntryLogic = kea<paymentEntryLogicType>([
                 if (!organizationId) {
                     return
                 }
+                posthog.capture('subscription_upgrade_started', {
+                    flow: 'products',
+                    product_count: products.split(',').filter(Boolean).length,
+                })
+                posthog.logger.info('subscription_upgrade_requested', {
+                    flow: 'products',
+                    product_count: products.split(',').filter(Boolean).length,
+                })
                 await activateProducts(
                     organizationId,
                     { products },
@@ -504,6 +522,10 @@ export const paymentEntryLogic = kea<paymentEntryLogicType>([
                         () => billingActivateAuthorizeCreate({ organization_id: organizationId }),
                         (response) => {
                             actions.setClientSecret(response.clientSecret || null)
+                            if (response.clientSecret) {
+                                posthog.capture('payment_details_authorization_ready')
+                                posthog.logger.info('payment_details_authorization_ready')
+                            }
                             actions.setLoading(false)
                         },
                         (error) => {
@@ -532,6 +554,8 @@ export const paymentEntryLogic = kea<paymentEntryLogicType>([
                     actions.setStripeError('Return to billing and start the payment flow again.')
                     return
                 }
+                posthog.capture('payment_submission_started')
+                posthog.logger.info('payment_submission_started')
                 actions.setLoading(true)
                 const failConfirmation = (error: unknown, message: string): void => {
                     actions.setLoading(false)

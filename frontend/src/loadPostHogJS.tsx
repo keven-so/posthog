@@ -160,10 +160,19 @@ export function loadPostHogJS(): void {
             capture_webmcp: true,
             opt_out_capturing_by_default: window.IMPERSONATED_SESSION,
             __preview_deferred_init_extensions: true,
+            capture_exceptions: {
+                capture_unhandled_errors: true,
+                capture_unhandled_rejections: true,
+                capture_console_errors: false,
+            },
             error_tracking: {
                 __capturePostHogExceptions: true,
             },
             metrics: { network: { name: networkMetricName }, flags: true, serviceName: 'posthog-app' },
+            logs: {
+                serviceName: 'posthog-app',
+                environment: window.POSTHOG_APP_CONTEXT?.run_mode?.toLowerCase() || 'unknown',
+            },
             before_send: [
                 dropScopeNotFoundExceptions,
                 dropHandledAuthGateExceptions,
